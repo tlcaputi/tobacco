@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Policy Maps &mdash; Tobacco Control Laws</title>
+<link rel="stylesheet" href="/css/main.css">
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3"></script>
+
+</head>
+<body>
+<nav class="site-nav">
+  <a href="/" class="nav-brand">Tobacco Control Laws Dataset</a>
+  <div class="nav-links">
+    <a href="/" class="nav-link">About</a>
+    <a href="/coverage/" class="nav-link">Coverage</a>
+    <a href="/policies/" class="nav-link active">Policy Maps</a>
+  </div>
+</nav>
+
+
+<div class="page-wide">
+  <h1 style="font-size:1.35rem;font-weight:600;margin-bottom:4px">Policy Maps</h1>
+  <p style="color:var(--muted);font-size:0.78rem;margin-bottom:18px">Geographic distribution of local tobacco control ordinances. Use the date slider to see the policy landscape at any point in time.</p>
+
+  <div class="stats-row" id="summary-row"></div>
+
+  <div class="date-slider-section" id="date-slider-section" style="display:none">
+    <div class="date-slider-label">View policies as of:</div>
+    <div class="date-slider-row">
+      <input type="range" class="date-slider" id="date-slider" min="0" max="100" value="100">
+      <div class="date-slider-value" id="date-value">Present</div>
+    </div>
+    <div class="date-slider-range">
+      <span id="date-min"></span>
+      <span id="date-max">Present</span>
+    </div>
+  </div>
+
+  <div class="filter-row" id="filter-row"></div>
+
+  <div class="map-section">
+    <div id="map-container"></div>
+    <div class="map-hint" id="map-hint"></div>
+    <div class="tooltip" id="tooltip"></div>
+  </div>
+
+  <div style="margin-top:24px">
+    <div style="font-size:0.88rem;font-weight:600;margin-bottom:10px" id="list-header"></div>
+    <div class="list-grid" id="list-grid"></div>
+  </div>
+</div>
+
+<script type="module">
+import { FIPS_TO_STATE, LAW_TYPES, loadData, esc, categorize, getTypeInfo, parseDate, formatDateInt } from '/js/shared.js';
+
+const { data: DATA, us: US_TOPO } = await loadData();
+
+// Build ordinance index with dates
+let allOrdinanceJurs = [];
+let typeCounts = {};
+let activeFilters = new Set();
+let allDates = [];
+
+for (const [abbrev, jurs] of Object.entries(DATA.jurisdictions || {})) {
+  const stateName = DATA.states[abbrev]?.name || abbrev;
+  for (const j of jurs) {
+    if (!j.ordinances || j.ordinances.length === 0 || !j.lat || !j.lon) continue;
+    const types = new Set();
+    const ordDates = [];
+    for (const o of j.ordinances) {
+      const cat = categorize(o.law_type);
+      if (cat) types.add(cat);
+      const d = parseDate(o.effective_date) || parseDate(o.adoption_date);
+      if (d) { ordDates.push(d); allDates.push(d); }
+    }
+    if (types.size === 0) continue;
+    allOrdinanceJurs.push({
+      name: j.name, state: abbrev, stateName, lat: j.lat, lon: j.lon,
+      types, ordinances: j.ordinances, ordDates
+    });
+    for (const t of types) typeCounts[t] = (typeCounts[t] || 0) + 1;
+  }
+}
+
+// Date slider setup
+allDates.sort((a, b) => a - b);
+const uniqueDates = [...new Set(allDates)];
+let currentDateFilter = null; // null = show all (present)
+
+if (uniqueDates.length > 1) {
+  const section = document.getElementById('date-slider-section');
+  section.style.display = 'block';
+  const slider = document.getElementById('date-slider');
+  const dateValue = document.getElementById('date-value');
+  const minDate = uniqueDates[0];
+  const maxDate = uniqueDates[uniqueDates.length - 1];
+
+  document.getElementById('date-min').textContent = formatDateInt(minDate);
+
+  slider.min = 0;
+  slider.max = uniqueDates.length; // last position = "present"
+  slider.value = uniqueDates.length;
+
+  slider.oninput = () => {
+    const idx = parseInt(slider.value);
+    if (idx >= uniqueDates.length) {
+      currentDateFilter = null;
+      dateValue.textContent = 'Present';
+    } else {
+      currentDateFilter = uniqueDates[idx];
+      dateValue.textContent = formatDateInt(currentDateFilter);
+    }
+    renderMap();
+    renderList();
+  };
+}
+
+function getFilteredJurs() {
+  let jurs = allOrdinanceJurs;
+
+  // Date filter: only include jurisdictions that had at least one qualifying ordinance by the selected date
+  if (currentDateFilter !== null) {
+    jurs = jurs.filter(j => {
+      // Check if any ordinance was effective by the selected date
+      return j.ordinances.some(o => {
+        const d = parseDate(o.effective_date) || parseDate(o.adoption_date);
+        return d && d <= currentDateFilter;
+      });
+    }).map(j => {
+      // Also filter the ordinances themselves to only those effective by the date
+      const filteredOrds = j.ordinances.filter(o => {
+        const d = parseDate(o.effective_date) || parseDate(o.adoption_date);
+        return d && d <= currentDateFilter;
+      });
+      const filteredTypes = new Set();
+      for (const o of filteredOrds) {
+        const cat = categorize(o.law_type);
+        if (cat) filteredTypes.add(cat);
+      }
+      return { ...j, ordinances: filteredOrds, types: filteredTypes };
+    }).filter(j => j.types.size > 0);
+  }
+
+  // Type filter
+  if (activeFilters.size > 0) {
+    jurs = jurs.filter(j => {
+      for (const f of activeFilters) {
+        if (j.types.has(f)) return true;
+      }
+      return false;
+    });
+  }
+  return jurs;
+}
+
+// Summary
+function renderSummary() {
+  const jurs = getFilteredJurs();
+  const totalOrds = jurs.reduce((s, j) => s + j.ordinances.length, 0);
+  const statesSet = new Set(jurs.map(j => j.state));
+  document.getElementById('summary-row').innerHTML = `
+    <div class="stat"><div class="stat-val" style="color:var(--green)">${jurs.length}</div><div class="stat-lbl">Jurisdictions with ordinances</div></div>
+    <div class="stat"><div class="stat-val" style="color:var(--blue)">${totalOrds}</div><div class="stat-lbl">Total ordinances</div></div>
+    <div class="stat"><div class="stat-val" style="color:var(--purple)">${statesSet.size}</div><div class="stat-lbl">States with data</div></div>
+    <div class="stat"><div class="stat-val" style="color:var(--accent)">${LAW_TYPES.filter(t => typeCounts[t.key]).length}</div><div class="stat-lbl">Policy types found</div></div>
+  `;
+}
+
+function renderFilters() {
+  const sorted = LAW_TYPES.filter(t => typeCounts[t.key] > 0)
+    .sort((a, b) => (typeCounts[b.key] || 0) - (typeCounts[a.key] || 0));
+  document.getElementById('filter-row').innerHTML = `
+    <div class="filter-pill ${activeFilters.size === 0 ? 'active' : ''}" data-type="all" style="${activeFilters.size === 0 ? 'background:var(--accent);border-color:var(--accent)' : ''}">
+      All Types <span class="filter-count">(${allOrdinanceJurs.length})</span>
+    </div>
+    ${sorted.map(t => {
+      const isActive = activeFilters.has(t.key);
+      return `<div class="filter-pill ${isActive ? 'active' : ''}" data-type="${t.key}" style="${isActive ? `background:${t.color}22;border-color:${t.color};color:${t.color}` : ''}">
+        <span class="filter-dot" style="background:${t.color}"></span>
+        ${t.label} <span class="filter-count">(${typeCounts[t.key]})</span>
+      </div>`;
+    }).join('')}
+  `;
+  document.querySelectorAll('.filter-pill').forEach(pill => {
+    pill.onclick = () => {
+      if (pill.dataset.type === 'all') activeFilters.clear();
+      else if (activeFilters.has(pill.dataset.type)) activeFilters.delete(pill.dataset.type);
+      else activeFilters.add(pill.dataset.type);
+      renderFilters();
+      renderSummary();
+      renderMap();
+      renderList();
+    };
+  });
+}
+
+function renderMap() {
+  const container = document.getElementById('map-container');
+  container.innerHTML = '';
+  const width = container.clientWidth;
+  const height = width * 0.6;
+  const tooltip = document.getElementById('tooltip');
+
+  const svg = d3.select('#map-container').append('svg')
+    .attr('viewBox', `0 0 ${width} ${height}`)
+    .attr('preserveAspectRatio', 'xMidYMid meet');
+
+  const projection = d3.geoAlbersUsa().fitSize([width, height],
+    topojson.feature(US_TOPO, US_TOPO.objects.states));
+  const path = d3.geoPath().projection(projection);
+
+  svg.selectAll('.state-bg')
+    .data(topojson.feature(US_TOPO, US_TOPO.objects.states).features)
+    .join('path').attr('d', path)
+    .attr('fill', '#141720').attr('stroke', '#2a3040').attr('stroke-width', 0.6);
+
+  const jurs = getFilteredJurs();
+  const dots = [];
+  for (const j of jurs) {
+    const pt = projection([j.lon, j.lat]);
+    if (!pt) continue;
+    let dotColor = '#6c8cff';
+    if (activeFilters.size === 1) {
+      dotColor = getTypeInfo([...activeFilters][0]).color;
+    } else if (activeFilters.size > 1) {
+      for (const f of activeFilters) { if (j.types.has(f)) { dotColor = getTypeInfo(f).color; break; } }
+    } else {
+      dotColor = getTypeInfo([...j.types][0]).color;
+    }
+    dots.push({ ...j, x: pt[0], y: pt[1], dotColor });
+  }
+
+  const dotR = dots.length > 100 ? 3.5 : dots.length > 50 ? 4.5 : 6;
+  svg.selectAll('.policy-dot')
+    .data(dots).join('circle')
+    .attr('cx', d => d.x).attr('cy', d => d.y).attr('r', dotR)
+    .attr('fill', d => d.dotColor).attr('opacity', 0.85)
+    .attr('stroke', '#fff').attr('stroke-width', 0.5).attr('cursor', 'pointer')
+    .on('mouseover', function(event, d) {
+      d3.select(this).attr('r', dotR + 3).attr('stroke-width', 2).raise();
+      const typeHtml = [...d.types].map(t => {
+        const info = getTypeInfo(t);
+        return `<span class="tt-type" style="background:${info.color}22;color:${info.color}">${info.label}</span>`;
+      }).join('');
+      tooltip.innerHTML = `
+        <div class="tt-name">${esc(d.name)}</div>
+        <div class="tt-row">${d.stateName}</div>
+        <div style="margin-top:4px">${typeHtml}</div>
+        <div class="tt-row">${d.ordinances.length} ordinance${d.ordinances.length!==1?'s':''}</div>`;
+      tooltip.style.display = 'block';
+    })
+    .on('mousemove', function(event) {
+      const rect = container.getBoundingClientRect();
+      tooltip.style.left = (event.clientX - rect.left + 14) + 'px';
+      tooltip.style.top = (event.clientY - rect.top - 10) + 'px';
+    })
+    .on('mouseout', function() {
+      d3.select(this).attr('r', dotR).attr('stroke-width', 0.5);
+      tooltip.style.display = 'none';
+    });
+
+  const dateLabel = currentDateFilter ? ` as of ${formatDateInt(currentDateFilter)}` : '';
+  const filterLabel = activeFilters.size === 0 ? 'all types' :
+    [...activeFilters].map(f => getTypeInfo(f).label).join(', ');
+  document.getElementById('map-hint').textContent =
+    `${dots.length} jurisdiction${dots.length!==1?'s':''} shown (${filterLabel})${dateLabel}`;
+}
+
+function renderList() {
+  const jurs = getFilteredJurs();
+  const sorted = [...jurs].sort((a, b) => a.state !== b.state ? a.state.localeCompare(b.state) : a.name.localeCompare(b.name));
+  const dateLabel = currentDateFilter ? ` as of ${formatDateInt(currentDateFilter)}` : '';
+  const filterLabel = activeFilters.size === 0 ? 'All Jurisdictions with Ordinances' :
+    [...activeFilters].map(f => getTypeInfo(f).label).join(', ');
+  document.getElementById('list-header').textContent = `${filterLabel} (${sorted.length})${dateLabel}`;
+
+  if (sorted.length === 0) {
+    document.getElementById('list-grid').innerHTML = '<div class="no-data-msg">No jurisdictions match the current filter.</div>';
+    return;
+  }
+  document.getElementById('list-grid').innerHTML = sorted.map(j => {
+    const typeHtml = [...j.types].map(t => {
+      const info = getTypeInfo(t);
+      return `<span class="type-tag" style="background:${info.color}22;color:${info.color}">${info.label}</span>`;
+    }).join('');
+    return `<div class="list-item">
+      <div class="list-item-name">${esc(j.name)}</div>
+      <div class="list-item-state"><a href="/state/?st=${j.state}">${j.stateName}</a> &middot; ${j.ordinances.length} ordinance${j.ordinances.length!==1?'s':''}</div>
+      <div class="list-item-types">${typeHtml}</div>
+    </div>`;
+  }).join('');
+}
+
+renderSummary();
+renderFilters();
+renderMap();
+renderList();
+</script>
+
+
+<div class="site-footer">
+  Data from three-pass blind search pipeline &middot;
+  <a href="https://github.com/tlcaputi/tobacco-ordinances">Source code</a>
+</div>
+</body>
+</html>

@@ -3,95 +3,38 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tobacco Control Laws Dataset</title>
-<style>
-  :root {
-    --bg: #0f1117; --card: #1a1d27; --border: #2a2d3a; --text: #e1e4ed;
-    --muted: #8b8fa3; --accent: #6c8cff; --green: #34d399; --yellow: #fbbf24;
-    --orange: #fb923c; --red: #f87171; --purple: #a78bfa; --blue: #60a5fa;
-  }
-  * { margin:0; padding:0; box-sizing:border-box; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+<title>US Local Tobacco Control Laws &mdash; Tobacco Control Laws</title>
+<link rel="stylesheet" href="/css/main.css">
 
-  /* Nav */
-  .site-nav { display: flex; align-items: center; justify-content: space-between; padding: 12px 28px; border-bottom: 1px solid var(--border); background: var(--card); }
-  .nav-brand { font-size: 1rem; font-weight: 700; color: var(--text); text-decoration: none; }
-  .nav-brand:hover { color: var(--accent); }
-  .nav-links { display: flex; gap: 4px; }
-  .nav-link { padding: 6px 14px; border-radius: 6px; font-size: 0.8rem; font-weight: 500; color: var(--muted); text-decoration: none; transition: all 0.15s; }
-  .nav-link:hover { color: var(--text); background: rgba(108,140,255,0.08); }
-  .nav-link.active { color: var(--accent); background: rgba(108,140,255,0.12); }
-
-  .container { max-width: 960px; margin: 0 auto; padding: 40px 28px 60px; }
-
-  h1 { font-size: 2rem; font-weight: 700; margin-bottom: 8px; }
-  .lead { font-size: 1.1rem; color: var(--muted); margin-bottom: 32px; line-height: 1.7; }
-
-  .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 40px; }
-  @media (max-width: 700px) { .stats-row { grid-template-columns: repeat(2, 1fr); } }
-  .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; }
-  .stat-value { font-size: 2rem; font-weight: 700; }
-  .stat-label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; margin-top: 2px; }
-
-  h2 { font-size: 1.25rem; font-weight: 600; margin: 36px 0 14px; }
-  h3 { font-size: 1rem; font-weight: 600; margin: 24px 0 10px; color: var(--accent); }
-  p { margin-bottom: 14px; color: var(--text); opacity: 0.9; }
-  ul, ol { margin-bottom: 14px; padding-left: 22px; }
-  li { margin-bottom: 6px; opacity: 0.9; }
-
-  .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 22px 24px; margin-bottom: 18px; }
-  .card-title { font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--accent); margin-bottom: 12px; }
-
-  .step-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 28px; }
-  @media (max-width: 700px) { .step-grid { grid-template-columns: 1fr; } }
-  .step { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 20px; position: relative; }
-  .step-num { display: inline-block; width: 28px; height: 28px; line-height: 28px; text-align: center; border-radius: 50%; background: var(--accent); color: #fff; font-weight: 700; font-size: 0.85rem; margin-bottom: 10px; }
-  .step h4 { font-size: 0.95rem; font-weight: 600; margin-bottom: 6px; }
-  .step p { font-size: 0.82rem; color: var(--muted); margin-bottom: 0; }
-
-  .cta-row { display: flex; gap: 12px; margin-top: 32px; }
-  .cta { display: inline-block; padding: 10px 22px; border-radius: 8px; font-size: 0.88rem; font-weight: 600; text-decoration: none; transition: all 0.15s; }
-  .cta-primary { background: var(--accent); color: #fff; }
-  .cta-primary:hover { background: #5a7aef; }
-  .cta-secondary { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
-  .cta-secondary:hover { background: rgba(108,140,255,0.1); }
-
-  .law-types { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  @media (max-width: 600px) { .law-types { grid-template-columns: 1fr; } }
-  .law-type-item { display: flex; align-items: center; gap: 8px; font-size: 0.82rem; padding: 6px 10px; background: var(--bg); border-radius: 6px; }
-  .law-type-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
-
-  .footer { text-align: center; padding: 20px; font-size: 0.72rem; color: var(--muted); border-top: 1px solid var(--border); }
-  .footer a { color: var(--accent); text-decoration: none; }
-</style>
 </head>
 <body>
 <nav class="site-nav">
-  <a href="index.html" class="nav-brand">Tobacco Control Laws Dataset</a>
+  <a href="/" class="nav-brand">Tobacco Control Laws Dataset</a>
   <div class="nav-links">
-    <a href="index.html" class="nav-link active">About</a>
-    <a href="progress.html" class="nav-link">Pipeline</a>
-    <a href="policies.html" class="nav-link">Policy Maps</a>
+    <a href="/" class="nav-link active">About</a>
+    <a href="/coverage/" class="nav-link">Coverage</a>
+    <a href="/policies/" class="nav-link">Policy Maps</a>
   </div>
 </nav>
 
-<div class="container">
-  <h1>US Local Tobacco Control Laws</h1>
-  <p class="lead">
+
+<div class="page">
+  <h1 style="font-size:2rem;font-weight:700;margin-bottom:8px">US Local Tobacco Control Laws</h1>
+  <p style="font-size:1.1rem;color:var(--muted);margin-bottom:32px;line-height:1.7">
     Building a comprehensive, open-access dataset of local tobacco control ordinances
     for every county and incorporated city in the United States, using AI-assisted search
     with a rigorous three-pass blind methodology and majority-vote reconciliation.
   </p>
 
   <div class="stats-row" id="stats-row">
-    <div class="stat-card"><div class="stat-value" style="color:var(--green)" id="s-done">--</div><div class="stat-label">Jurisdictions Complete</div></div>
-    <div class="stat-card"><div class="stat-value" style="color:var(--blue)" id="s-total">--</div><div class="stat-label">Total Jurisdictions</div></div>
-    <div class="stat-card"><div class="stat-value" style="color:var(--accent)" id="s-ords">--</div><div class="stat-label">Ordinances Found</div></div>
-    <div class="stat-card"><div class="stat-value" style="color:var(--purple)" id="s-states">--</div><div class="stat-label">States with Data</div></div>
+    <div class="stat"><div class="stat-val" style="color:var(--green)" id="s-done">--</div><div class="stat-lbl">Jurisdictions Complete</div></div>
+    <div class="stat"><div class="stat-val" style="color:var(--blue)" id="s-total">--</div><div class="stat-lbl">Total Jurisdictions</div></div>
+    <div class="stat"><div class="stat-val" style="color:var(--accent)" id="s-ords">--</div><div class="stat-lbl">Ordinances Found</div></div>
+    <div class="stat"><div class="stat-val" style="color:var(--purple)" id="s-states">--</div><div class="stat-lbl">States with Data</div></div>
   </div>
 
-  <h2>Why this dataset?</h2>
-  <p>
+  <h2 style="font-size:1.25rem;font-weight:600;margin:36px 0 14px">Why this dataset?</h2>
+  <p style="margin-bottom:14px;opacity:0.9">
     Health economics research on tobacco policy requires knowing exactly which local
     jurisdictions have which types of tobacco control ordinances, and when they took
     effect. The primary existing source, the
@@ -99,90 +42,66 @@
     $5,000&ndash;$8,000+ per data report. This project builds a comparable open dataset
     covering all US jurisdictions.
   </p>
-  <p>
+  <p style="margin-bottom:14px;opacity:0.9">
     This work was motivated by
-    <a href="https://doi.org/10.1016/j.jhealeco.2022.102720" style="color:var(--accent)">Abouk et al. (2023)</a>,
+    <a href="https://doi.org/10.1016/j.jhealeco.2022.102720">Abouk et al. (2023)</a>,
     which estimates the causal effects of e-cigarette taxes on youth tobacco use and
     controls for local tobacco control policies. Constructing population-weighted
     policy exposure measures requires jurisdiction-level coverage data &mdash; exactly
     what this dataset provides.
   </p>
 
-  <h2>What we track</h2>
+  <h2 style="font-size:1.25rem;font-weight:600;margin:36px 0 14px">What we track</h2>
   <div class="card">
-    <div class="law-types">
-      <div class="law-type-item"><div class="law-type-dot" style="background:#6c8cff"></div>Smokefree Outdoor (parks, beaches, dining)</div>
-      <div class="law-type-item"><div class="law-type-dot" style="background:#34d399"></div>Smokefree Indoor (beyond state law)</div>
-      <div class="law-type-item"><div class="law-type-dot" style="background:#fbbf24"></div>Tobacco Retail Sales (licensing, permits)</div>
-      <div class="law-type-item"><div class="law-type-dot" style="background:#a78bfa"></div>Flavored Tobacco Ban</div>
-      <div class="law-type-item"><div class="law-type-dot" style="background:#fb923c"></div>Smokefree Multi-Unit Housing</div>
-      <div class="law-type-item"><div class="law-type-dot" style="background:#f87171"></div>Retailer Density / Proximity</div>
-      <div class="law-type-item"><div class="law-type-dot" style="background:#60a5fa"></div>Local Excise Tax</div>
-      <div class="law-type-item"><div class="law-type-dot" style="background:#f472b6"></div>Other local ordinances</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div style="display:flex;align-items:center;gap:8px;font-size:0.82rem;padding:6px 10px;background:var(--bg);border-radius:6px"><span style="width:10px;height:10px;border-radius:3px;background:#6c8cff;flex-shrink:0"></span>Smokefree Outdoor (parks, beaches, dining)</div>
+      <div style="display:flex;align-items:center;gap:8px;font-size:0.82rem;padding:6px 10px;background:var(--bg);border-radius:6px"><span style="width:10px;height:10px;border-radius:3px;background:#34d399;flex-shrink:0"></span>Smokefree Indoor (beyond state law)</div>
+      <div style="display:flex;align-items:center;gap:8px;font-size:0.82rem;padding:6px 10px;background:var(--bg);border-radius:6px"><span style="width:10px;height:10px;border-radius:3px;background:#fbbf24;flex-shrink:0"></span>Tobacco Retail Sales (licensing, permits)</div>
+      <div style="display:flex;align-items:center;gap:8px;font-size:0.82rem;padding:6px 10px;background:var(--bg);border-radius:6px"><span style="width:10px;height:10px;border-radius:3px;background:#a78bfa;flex-shrink:0"></span>Flavored Tobacco Ban</div>
+      <div style="display:flex;align-items:center;gap:8px;font-size:0.82rem;padding:6px 10px;background:var(--bg);border-radius:6px"><span style="width:10px;height:10px;border-radius:3px;background:#fb923c;flex-shrink:0"></span>Smokefree Multi-Unit Housing</div>
+      <div style="display:flex;align-items:center;gap:8px;font-size:0.82rem;padding:6px 10px;background:var(--bg);border-radius:6px"><span style="width:10px;height:10px;border-radius:3px;background:#f87171;flex-shrink:0"></span>Retailer Density / Proximity</div>
+      <div style="display:flex;align-items:center;gap:8px;font-size:0.82rem;padding:6px 10px;background:var(--bg);border-radius:6px"><span style="width:10px;height:10px;border-radius:3px;background:#60a5fa;flex-shrink:0"></span>Local Excise Tax</div>
+      <div style="display:flex;align-items:center;gap:8px;font-size:0.82rem;padding:6px 10px;background:var(--bg);border-radius:6px"><span style="width:10px;height:10px;border-radius:3px;background:#f472b6;flex-shrink:0"></span>Other local ordinances</div>
     </div>
   </div>
 
-  <h2>Methodology: Three-Pass Blind Search</h2>
-  <p>
+  <h2 style="font-size:1.25rem;font-weight:600;margin:36px 0 14px">Methodology: Three-Pass Blind Search</h2>
+  <p style="margin-bottom:14px;opacity:0.9">
     Each jurisdiction is independently searched multiple times by separate AI agents
     with no knowledge of prior results. A majority-vote reconciliation determines
     which laws are included in the final dataset.
   </p>
 
-  <div class="step-grid">
-    <div class="step">
-      <div class="step-num">1</div>
-      <h4>Enumerate</h4>
-      <p>All counties and incorporated places from the Census Bureau (2020 PL 94-171), with FIPS codes and population.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:28px">
+    <div class="card" style="position:relative">
+      <div style="display:inline-block;width:28px;height:28px;line-height:28px;text-align:center;border-radius:50%;background:var(--accent);color:#fff;font-weight:700;font-size:0.85rem;margin-bottom:10px">1</div>
+      <h4 style="font-size:0.95rem;font-weight:600;margin-bottom:6px">Enumerate</h4>
+      <p style="font-size:0.82rem;color:var(--muted);margin-bottom:0">All counties and incorporated places from the Census Bureau (2020 PL 94-171), with FIPS codes and population.</p>
     </div>
-    <div class="step">
-      <div class="step-num">2</div>
-      <h4>Pass 1 &amp; 2</h4>
-      <p>Two independent blind searches of municipal codes, government websites, news, and policy databases. No knowledge of each other's results.</p>
+    <div class="card" style="position:relative">
+      <div style="display:inline-block;width:28px;height:28px;line-height:28px;text-align:center;border-radius:50%;background:var(--accent);color:#fff;font-weight:700;font-size:0.85rem;margin-bottom:10px">2</div>
+      <h4 style="font-size:0.95rem;font-weight:600;margin-bottom:6px">Pass 1 &amp; 2</h4>
+      <p style="font-size:0.82rem;color:var(--muted);margin-bottom:0">Two independent blind searches of municipal codes, government websites, news, and policy databases. No knowledge of each other's results.</p>
     </div>
-    <div class="step">
-      <div class="step-num">3</div>
-      <h4>Reconcile</h4>
-      <p>Disagreements get a tiebreaker (Pass 3). Laws found by 2+ of 3 passes are included. Single-pass findings are excluded.</p>
+    <div class="card" style="position:relative">
+      <div style="display:inline-block;width:28px;height:28px;line-height:28px;text-align:center;border-radius:50%;background:var(--accent);color:#fff;font-weight:700;font-size:0.85rem;margin-bottom:10px">3</div>
+      <h4 style="font-size:0.95rem;font-weight:600;margin-bottom:6px">Reconcile</h4>
+      <p style="font-size:0.82rem;color:var(--muted);margin-bottom:0">Disagreements get a tiebreaker (Pass 3). Laws found by 2+ of 3 passes are included. Single-pass findings are excluded.</p>
     </div>
   </div>
 
-  <div class="card">
-    <div class="card-title">Confidence levels</div>
-    <ul style="list-style:none;padding:0">
-      <li style="margin-bottom:8px"><span style="display:inline-block;padding:2px 8px;border-radius:4px;background:#34d39922;color:#34d399;font-weight:600;font-size:0.78rem;margin-right:6px">High</span> Found by both Pass 1 and Pass 2 independently</li>
-      <li style="margin-bottom:8px"><span style="display:inline-block;padding:2px 8px;border-radius:4px;background:#6c8cff22;color:#6c8cff;font-weight:600;font-size:0.78rem;margin-right:6px">Confirmed</span> Found by 2 of 3 passes (tiebreaker resolved)</li>
-      <li style="margin-bottom:8px"><span style="display:inline-block;padding:2px 8px;border-radius:4px;background:#fbbf2422;color:#fbbf24;font-weight:600;font-size:0.78rem;margin-right:6px">Low</span> Found by only 1 pass &mdash; not included in final dataset</li>
-    </ul>
-  </div>
-
-  <h2>Data sources searched</h2>
-  <p>Agents search across multiple sources for each jurisdiction:</p>
-  <ul>
-    <li><strong>Municipal code libraries:</strong> Municode, eCode360, American Legal Publishing, Qcode</li>
-    <li><strong>Government websites:</strong> City/county official sites, meeting minutes, ordinance databases</li>
-    <li><strong>Policy databases:</strong> ANR Foundation lists, Campaign for Tobacco-Free Kids, Counter Tobacco</li>
-    <li><strong>News and media:</strong> Local news coverage of ordinance adoption</li>
-    <li><strong>State health departments:</strong> Tobacco prevention program records</li>
+  <h2 style="font-size:1.25rem;font-weight:600;margin:36px 0 14px">Known limitations</h2>
+  <ul style="margin-bottom:14px;padding-left:22px;opacity:0.9">
+    <li style="margin-bottom:6px"><strong>State vs. local confusion:</strong> Agents sometimes attribute statewide laws to individual cities. The three-pass methodology mitigates this but doesn't eliminate it.</li>
+    <li style="margin-bottom:6px"><strong>County vs. city confusion:</strong> County ordinances may be incorrectly attributed to cities within that county.</li>
+    <li style="margin-bottom:6px"><strong>Coverage:</strong> Only states with completed three-pass searches have reliable data. See <a href="/coverage/">Coverage</a> for current progress.</li>
+    <li style="margin-bottom:6px"><strong>Temporal coverage:</strong> Effective dates are captured where available but coverage varies.</li>
   </ul>
 
-  <h2>Known limitations</h2>
-  <ul>
-    <li><strong>State vs. local confusion:</strong> Agents sometimes attribute statewide laws to individual cities (the #1 error type). The three-pass methodology mitigates this but doesn't eliminate it.</li>
-    <li><strong>County vs. city confusion:</strong> County ordinances may be incorrectly attributed to cities within that county.</li>
-    <li><strong>Coverage:</strong> Only states with completed three-pass searches have reliable data. See the <a href="progress.html" style="color:var(--accent)">Pipeline</a> page for current progress.</li>
-    <li><strong>Temporal coverage:</strong> The dataset captures current/recent ordinances. Historical data (effective dates) is captured where available but coverage varies.</li>
-  </ul>
-
-  <div class="cta-row">
-    <a href="progress.html" class="cta cta-primary">View pipeline progress</a>
-    <a href="policies.html" class="cta cta-secondary">Browse policy maps</a>
+  <div style="display:flex;gap:12px;margin-top:32px">
+    <a href="/coverage/" style="display:inline-block;padding:10px 22px;border-radius:8px;font-size:0.88rem;font-weight:600;background:var(--accent);color:#fff;text-decoration:none">View coverage</a>
+    <a href="/policies/" style="display:inline-block;padding:10px 22px;border-radius:8px;font-size:0.88rem;font-weight:600;background:transparent;color:var(--accent);border:1px solid var(--accent);text-decoration:none">Browse policy maps</a>
   </div>
-</div>
-
-<div class="footer">
-  Data generated from three-pass blind search pipeline &middot;
-  <a href="https://github.com/tlcaputi/tobacco-ordinances">Source code</a>
 </div>
 
 <script>
@@ -195,5 +114,11 @@ fetch('dashboard_data.json').then(r => r.json()).then(data => {
   document.getElementById('s-states').textContent = statesWithData;
 });
 </script>
+
+
+<div class="site-footer">
+  Data from three-pass blind search pipeline &middot;
+  <a href="https://github.com/tlcaputi/tobacco-ordinances">Source code</a>
+</div>
 </body>
 </html>
