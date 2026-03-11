@@ -91,7 +91,7 @@ function renderPage() {
 
     <div class="map-section" style="margin-bottom:22px">
       <div id="map-container"></div>
-      <div class="map-hint">Counties colored by search completion. Dots show jurisdictions with ordinances.</div>
+      <div class="map-hint">Counties colored by search completion. Click a county to see its jurisdictions.</div>
       <div class="tooltip" id="tooltip"></div>
     </div>
 
@@ -214,9 +214,7 @@ function renderStateMap() {
     })
     .on('click', function(event, d) {
       const cfips = d.id.toString().padStart(5,'0');
-      const cname = countyNames[cfips] || '';
-      const el = document.getElementById('jur-search');
-      if (el) { el.value = cname.replace(' County','').replace(/, .*/,''); el.dispatchEvent(new Event('input')); el.scrollIntoView({behavior:'smooth',block:'center'}); }
+      window.location.href = `/county/?st=${stateAbbrev}&fips=${cfips}`;
     });
 
   // State outline

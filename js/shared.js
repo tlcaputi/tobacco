@@ -137,10 +137,19 @@ export function getTypeInfo(key) {
 // Load data + topology in parallel
 export async function loadData() {
   const [data, us] = await Promise.all([
-    fetch('dashboard_data.json').then(r => r.json()),
+    fetch('/dashboard_data.json').then(r => r.json()),
     fetch('https://cdn.jsdelivr.net/npm/us-atlas@3/counties-10m.json').then(r => r.json()),
   ]);
   return { data, us };
+}
+
+// Load place boundaries for a state (by 2-digit FIPS)
+export async function loadPlaces(stateFips) {
+  try {
+    const resp = await fetch(`/geo/places_${stateFips}.json`);
+    if (!resp.ok) return null;
+    return resp.json();
+  } catch { return null; }
 }
 
 export function buildOrdCard(o) {

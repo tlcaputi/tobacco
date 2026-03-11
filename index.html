@@ -33,22 +33,18 @@
     <div class="stat"><div class="stat-val" style="color:var(--purple)" id="s-states">--</div><div class="stat-lbl">States with Data</div></div>
   </div>
 
-  <h2 style="font-size:1.25rem;font-weight:600;margin:36px 0 14px">Why this dataset?</h2>
+  <h2 style="font-size:1.25rem;font-weight:600;margin:36px 0 14px">What is this?</h2>
   <p style="margin-bottom:14px;opacity:0.9">
-    Health economics research on tobacco policy requires knowing exactly which local
-    jurisdictions have which types of tobacco control ordinances, and when they took
-    effect. The primary existing source, the
-    <strong>ANR Foundation U.S. Tobacco Control Laws Database</strong>, costs
-    $5,000&ndash;$8,000+ per data report. This project builds a comparable open dataset
-    covering all US jurisdictions.
+    This is a comprehensive, open-access dataset of <strong>local tobacco control ordinances</strong>
+    for every county and incorporated city in the United States. It records which jurisdictions
+    have which types of tobacco laws, when they took effect, and links to source documents.
   </p>
   <p style="margin-bottom:14px;opacity:0.9">
-    This work was motivated by
-    <a href="https://doi.org/10.1016/j.jhealeco.2022.102720">Abouk et al. (2023)</a>,
-    which estimates the causal effects of e-cigarette taxes on youth tobacco use and
-    controls for local tobacco control policies. Constructing population-weighted
-    policy exposure measures requires jurisdiction-level coverage data &mdash; exactly
-    what this dataset provides.
+    The dataset is built using AI-assisted web search with a rigorous three-pass blind
+    methodology. Each jurisdiction is independently searched multiple times, and results
+    are reconciled by majority vote to minimize errors. The goal is to provide researchers
+    with free, jurisdiction-level tobacco policy data that can be used to construct
+    population-weighted policy exposure measures for panel data analysis.
   </p>
 
   <h2 style="font-size:1.25rem;font-weight:600;margin:36px 0 14px">What we track</h2>
@@ -105,7 +101,7 @@
 </div>
 
 <script>
-fetch('dashboard_data.json').then(r => r.json()).then(data => {
+fetch('/dashboard_data.json').then(r => r.json()).then(data => {
   const t = data.totals;
   document.getElementById('s-done').textContent = (t.jur_status.done || 0).toLocaleString();
   document.getElementById('s-total').textContent = (t.total_jurisdictions_enumerated || 0).toLocaleString();
