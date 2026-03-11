@@ -411,8 +411,7 @@ function renderNationalMap() {
       const fips = d.id.toString().padStart(2, '0');
       const abbrev = fipsToAbbrev[fips];
       if (abbrev) {
-        renderStateMap(abbrev);
-        openSidebar(abbrev);
+        window.location.href = `state.html?st=${abbrev}`;
       }
     });
 }
@@ -828,12 +827,8 @@ function openSidebar(abbrev, countyFips) {
   renderJurisdictions(abbrev, searchEl.value, countyFips);
 }
 
-function cleanSearchNotes(text) {
-  if (!text) return '';
-  // Remove raw error tags like [ERROR: timed out], [ERROR: ...]
-  let cleaned = text.replace(/\[ERROR:[^\]]*\]/gi, '').trim();
-  // If the entire note was just an error tag, return empty
-  return cleaned;
+function isErrorNote(text) {
+  return text && /\[ERROR:/i.test(text);
 }
 
 function renderJurisdictions(abbrev, filter, countyFips) {
@@ -902,8 +897,10 @@ function renderJurisdictions(abbrev, filter, countyFips) {
         if (!p) {
           return `<div class="pass-tab${active}" onclick="event.stopPropagation();switchPassTab('${uid}',${si})" style="opacity:0.35;cursor:default" title="Not yet searched"><span class="pass-dot" style="background:#555"></span>${s.label}</div>`;
         }
-        const dotColor = p.ordinances.length > 0 ? s.color : '#999';
-        return `<div class="pass-tab${active}" onclick="event.stopPropagation();switchPassTab('${uid}',${si})" title="${p.ordinances.length} ordinances"><span class="pass-dot" style="background:${dotColor}"></span>${s.label}</div>`;
+        const errored = isErrorNote(p.search_notes);
+        const dotColor = errored ? '#f87171' : p.ordinances.length > 0 ? s.color : '#999';
+        const title = errored ? 'Search failed — needs re-run' : `${p.ordinances.length} ordinances`;
+        return `<div class="pass-tab${active}" onclick="event.stopPropagation();switchPassTab('${uid}',${si})" title="${title}"><span class="pass-dot" style="background:${dotColor}"></span>${s.label}</div>`;
       }).join('');
 
       const panels = slots.map((s, si) => {
@@ -912,8 +909,10 @@ function renderJurisdictions(abbrev, filter, countyFips) {
         if (!p) {
           return `<div class="pass-panel${active}"><div class="pass-empty" style="color:#555">Not yet searched</div></div>`;
         }
-        const cleanedNote = cleanSearchNotes(p.search_notes);
-        const noteHtml = cleanedNote ? `<div class="pass-note">${esc(cleanedNote)}</div>` : '';
+        if (isErrorNote(p.search_notes)) {
+          return `<div class="pass-panel${active}"><div class="pass-note" style="color:var(--red);background:rgba(248,113,113,0.08)">Search failed (timed out). This pass needs to be re-run.</div></div>`;
+        }
+        const noteHtml = p.search_notes ? `<div class="pass-note">${esc(p.search_notes)}</div>` : '';
         if (p.ordinances.length === 0) {
           return `<div class="pass-panel${active}">${noteHtml}<div class="pass-empty">Searched &mdash; no local tobacco ordinances found.</div></div>`;
         }

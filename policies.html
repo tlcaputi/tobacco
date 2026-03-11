@@ -396,7 +396,7 @@ function renderList() {
 
     return `<div class="list-item">
       <div class="list-item-name">${esc(j.name)}</div>
-      <div class="list-item-state">${j.stateName} &middot; ${j.ordinances.length} ordinance${j.ordinances.length!==1?'s':''}</div>
+      <div class="list-item-state"><a href="state.html?st=${j.state}" style="color:var(--accent);text-decoration:none">${j.stateName}</a> &middot; ${j.ordinances.length} ordinance${j.ordinances.length!==1?'s':''}</div>
       <div class="list-item-types">${typeHtml}</div>
       ${ordDetails}
       ${moreCount > 0 ? `<div style="font-size:0.68rem;color:var(--accent);margin-top:3px">+${moreCount} more</div>` : ''}
