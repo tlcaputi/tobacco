@@ -196,46 +196,47 @@ function renderMap() {
     if (j.place_fips) placeIdToJur[j.place_fips] = j;
   }
 
-  // Draw place boundaries if available
+  // Draw ALL Census place boundaries in this county
   let placesDrawn = 0;
+  const matchedPlaceFips = new Set();
   if (placesTopo) {
     const layerName = Object.keys(placesTopo.objects)[0];
     const allPlaces = topojson.feature(placesTopo, placesTopo.objects[layerName]).features;
 
-    // Filter to places that belong to jurisdictions in this county
-    const countyPlaces = allPlaces.filter(p => {
-      return placeIdToJur[p.properties.GEOID];
-    });
-
+    // Show ALL places in this county (using COUNTYFP property), not just tracked ones
+    const countyPlaces = allPlaces.filter(p => p.properties.COUNTYFP === countyFips);
     placesDrawn = countyPlaces.length;
+
+    // Track which place_fips have boundaries
+    for (const p of countyPlaces) matchedPlaceFips.add(p.properties.GEOID);
 
     g.selectAll('.place-boundary')
       .data(countyPlaces).join('path')
       .attr('d', path)
       .attr('fill', d => {
         const j = placeIdToJur[d.properties.GEOID];
-        if (!j) return '#1a1f2e';
+        if (!j) return '#1e2235'; // untracked place — dim neutral
         if (j.ordinance_count > 0) return '#6c8cff33';
         const sc = S_COLORS[j.status || '0_passes'];
         return sc + '44';
       })
       .attr('stroke', d => {
         const j = placeIdToJur[d.properties.GEOID];
-        if (!j) return '#3a4050';
+        if (!j) return '#2a3040'; // untracked — subtle border
         if (j.ordinance_count > 0) return '#6c8cff';
         return S_COLORS[j.status || '0_passes'] || '#3a4050';
       })
-      .attr('stroke-width', 1)
+      .attr('stroke-width', d => placeIdToJur[d.properties.GEOID] ? 1.2 : 0.5)
       .attr('cursor', 'pointer')
       .on('mouseover', function(event, d) {
         d3.select(this).attr('stroke-width', 2.5).attr('stroke', '#fff');
         const j = placeIdToJur[d.properties.GEOID];
-        const name = j ? j.name : d.properties.NAME;
-        const status = j ? (S_LABELS[j.status || '0_passes']) : 'Unknown';
+        const name = j ? j.name : (d.properties.NAMELSAD || d.properties.NAME);
+        const status = j ? (S_LABELS[j.status || '0_passes']) : 'Not in dataset';
         const ords = j ? j.ordinance_count || 0 : 0;
         tooltip.innerHTML = `
           <div class="tt-name">${esc(name)}</div>
-          <div class="tt-row">${status} &middot; ${ords} ordinance${ords !== 1 ? 's' : ''}</div>`;
+          <div class="tt-row">${status}${j ? ` &middot; ${ords} ordinance${ords !== 1 ? 's' : ''}` : ''}</div>`;
         tooltip.style.display = 'block';
       })
       .on('mousemove', function(event) {
@@ -245,8 +246,10 @@ function renderMap() {
       })
       .on('mouseout', function(event, d) {
         const j = placeIdToJur[d.properties.GEOID];
-        d3.select(this).attr('stroke-width', 1).attr('stroke',
-          j && j.ordinance_count > 0 ? '#6c8cff' : S_COLORS[j?.status || '0_passes'] || '#3a4050');
+        d3.select(this)
+          .attr('stroke-width', j ? 1.2 : 0.5)
+          .attr('stroke', !j ? '#2a3040' :
+            j.ordinance_count > 0 ? '#6c8cff' : S_COLORS[j.status || '0_passes'] || '#3a4050');
         tooltip.style.display = 'none';
       })
       .on('click', function(event, d) {
@@ -254,7 +257,7 @@ function renderMap() {
         if (j) scrollToJur(j.name);
       });
 
-    // Labels for places
+    // Labels for larger places
     g.selectAll('.place-label')
       .data(countyPlaces.filter(d => {
         const bounds = path.bounds(d);
@@ -264,21 +267,18 @@ function renderMap() {
       .attr('x', d => path.centroid(d)[0])
       .attr('y', d => path.centroid(d)[1])
       .attr('text-anchor', 'middle').attr('dy', '0.35em')
-      .attr('fill', '#ffffffaa').attr('font-size', '8px').attr('pointer-events', 'none')
+      .attr('fill', d => placeIdToJur[d.properties.GEOID] ? '#ffffffbb' : '#ffffff55')
+      .attr('font-size', '8px').attr('pointer-events', 'none')
       .text(d => {
-        const j = placeIdToJur[d.properties.GEOID];
-        const name = j ? j.name.replace(/, [A-Za-z]+$/, '').replace(/\b(city|town|village|CDP)\b/gi, '').trim() : d.properties.NAME;
+        const name = d.properties.NAME || '';
         return name.length > 18 ? name.slice(0, 16) + '..' : name;
       });
   }
 
-  // Also draw dots for jurisdictions without place boundaries (counties, unmatched places)
+  // Dots for tracked jurisdictions without place boundaries (counties, unmatched)
   const jurisWithoutBoundary = jurs.filter(j => {
     if (!j.place_fips) return true;
-    if (!placesTopo) return true;
-    const layerName = Object.keys(placesTopo.objects)[0];
-    const allPlaces = topojson.feature(placesTopo, placesTopo.objects[layerName]).features;
-    return !allPlaces.some(p => p.properties.GEOID === j.place_fips);
+    return !matchedPlaceFips.has(j.place_fips);
   });
 
   const dotData = [];
@@ -329,11 +329,12 @@ function renderMap() {
   }
 
   // Update hint
+  const tracked = Object.keys(placeIdToJur).filter(g => matchedPlaceFips.has(g)).length;
   const hint = document.getElementById('map-hint');
   if (placesDrawn > 0) {
-    hint.textContent = `${placesDrawn} place boundaries shown. ${dotData.length > 0 ? `${dotData.length} additional jurisdictions as dots.` : ''} Click to see details.`;
+    hint.textContent = `${placesDrawn} Census places shown (${tracked} tracked in dataset). Click for details.`;
   } else {
-    hint.textContent = `Place boundaries not available for this state. ${dotData.length} jurisdictions shown as dots.`;
+    hint.textContent = `Place boundaries not available. ${dotData.length} jurisdictions shown as dots.`;
   }
 }
 
