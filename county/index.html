@@ -204,8 +204,7 @@ function renderMap() {
 
     // Filter to places that belong to jurisdictions in this county
     const countyPlaces = allPlaces.filter(p => {
-      const placeFips = p.properties.PLACEFP;
-      return placeIdToJur[placeFips];
+      return placeIdToJur[p.properties.GEOID];
     });
 
     placesDrawn = countyPlaces.length;
