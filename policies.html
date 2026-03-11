@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Policy Maps &mdash; Tobacco Control Laws</title>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3"></script>
+<style>
+  :root {
+    --bg: #0f1117; --card: #1a1d27; --border: #2a2d3a; --text: #e1e4ed;
+    --muted: #8b8fa3; --accent: #6c8cff; --green: #34d399; --yellow: #fbbf24;
+    --orange: #fb923c; --red: #f87171; --purple: #a78bfa; --blue: #60a5fa;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; }
+
+  /* Nav */
+  .site-nav { display: flex; align-items: center; justify-content: space-between; padding: 12px 28px; border-bottom: 1px solid var(--border); background: var(--card); }
+  .nav-brand { font-size: 1rem; font-weight: 700; color: var(--text); text-decoration: none; }
+  .nav-brand:hover { color: var(--accent); }
+  .nav-links { display: flex; gap: 4px; }
+  .nav-link { padding: 6px 14px; border-radius: 6px; font-size: 0.8rem; font-weight: 500; color: var(--muted); text-decoration: none; transition: all 0.15s; }
+  .nav-link:hover { color: var(--text); background: rgba(108,140,255,0.08); }
+  .nav-link.active { color: var(--accent); background: rgba(108,140,255,0.12); }
+
+  .page-content { padding: 20px 28px 40px; max-width: 1200px; margin: 0 auto; }
+
+  h1 { font-size: 1.35rem; font-weight: 600; margin-bottom: 4px; }
+  .subtitle { color: var(--muted); font-size: 0.78rem; margin-bottom: 18px; }
+
+  /* Filter pills */
+  .filter-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 18px; }
+  .filter-pill { display: flex; align-items: center; gap: 5px; padding: 5px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; cursor: pointer; border: 1px solid var(--border); background: var(--card); color: var(--muted); transition: all 0.15s; user-select: none; }
+  .filter-pill:hover { border-color: var(--accent); color: var(--text); }
+  .filter-pill.active { border-color: var(--accent); color: #fff; }
+  .filter-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+  .filter-count { opacity: 0.6; font-weight: 400; }
+
+  /* Summary stats */
+  .summary-row { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; font-size: 0.78rem; }
+  .summary-stat { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 10px 16px; }
+  .summary-stat .val { font-size: 1.4rem; font-weight: 700; }
+  .summary-stat .lbl { font-size: 0.68rem; color: var(--muted); text-transform: uppercase; }
+
+  /* Map */
+  .map-section { position: relative; }
+  #map-container svg { width: 100%; }
+  .tooltip {
+    position: absolute; background: #1e2030; border: 1px solid var(--border); border-radius: 6px;
+    padding: 10px 14px; font-size: 0.78rem; pointer-events: none; z-index: 10; display: none; max-width: 340px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+  }
+  .tt-name { font-weight: 700; font-size: 0.88rem; }
+  .tt-badge { display: inline-block; padding: 1px 7px; border-radius: 4px; font-size: 0.63rem; font-weight: 600; margin-left: 5px; vertical-align: middle; }
+  .tt-row { margin-top: 3px; color: var(--muted); font-size: 0.72rem; }
+  .tt-type { display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 0.63rem; font-weight: 600; margin: 1px 2px; }
+
+  /* List */
+  .list-section { margin-top: 24px; }
+  .list-header { font-size: 0.88rem; font-weight: 600; margin-bottom: 10px; }
+  .list-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 8px; }
+  .list-item { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; }
+  .list-item-name { font-weight: 600; font-size: 0.85rem; margin-bottom: 4px; }
+  .list-item-state { color: var(--muted); font-size: 0.72rem; }
+  .list-item-types { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 4px; }
+  .type-tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.68rem; font-weight: 600; }
+
+  .map-hint { font-size: 0.63rem; color: var(--muted); text-align: center; margin-top: 4px; }
+  .no-data-msg { text-align: center; padding: 40px 20px; color: var(--muted); font-size: 0.88rem; }
+
+  .footer { text-align: center; padding: 20px; font-size: 0.72rem; color: var(--muted); border-top: 1px solid var(--border); margin-top: 40px; }
+  .footer a { color: var(--accent); text-decoration: none; }
+</style>
+</head>
+<body>
+<nav class="site-nav">
+  <a href="index.html" class="nav-brand">Tobacco Control Laws Dataset</a>
+  <div class="nav-links">
+    <a href="index.html" class="nav-link">About</a>
+    <a href="progress.html" class="nav-link">Pipeline</a>
+    <a href="policies.html" class="nav-link active">Policy Maps</a>
+  </div>
+</nav>
+
+<div class="page-content">
+  <h1>Policy Maps</h1>
+  <p class="subtitle">Geographic distribution of local tobacco control ordinances found across searched jurisdictions</p>
+
+  <div class="summary-row" id="summary-row"></div>
+
+  <div class="filter-row" id="filter-row"></div>
+
+  <div class="map-section">
+    <div id="map-container"></div>
+    <div class="map-hint" id="map-hint">Showing jurisdictions with local tobacco ordinances. Click a filter to isolate a policy type.</div>
+    <div class="tooltip" id="tooltip"></div>
+  </div>
+
+  <div class="list-section">
+    <div class="list-header" id="list-header"></div>
+    <div class="list-grid" id="list-grid"></div>
+  </div>
+</div>
+
+<div class="footer">
+  Data from three-pass blind search pipeline &middot;
+  Only jurisdictions that have completed the pipeline are shown &middot;
+  <a href="progress.html">View pipeline progress</a>
+</div>
+
+<script>
+const FIPS_TO_STATE = {
+  "01":"AL","02":"AK","04":"AZ","05":"AR","06":"CA","08":"CO","09":"CT","10":"DE",
+  "11":"DC","12":"FL","13":"GA","15":"HI","16":"ID","17":"IL","18":"IN","19":"IA",
+  "20":"KS","21":"KY","22":"LA","23":"ME","24":"MD","25":"MA","26":"MI","27":"MN",
+  "28":"MS","29":"MO","30":"MT","31":"NE","32":"NV","33":"NH","34":"NJ","35":"NM",
+  "36":"NY","37":"NC","38":"ND","39":"OH","40":"OK","41":"OR","42":"PA","44":"RI",
+  "45":"SC","46":"SD","47":"TN","48":"TX","49":"UT","50":"VT","51":"VA","53":"WA",
+  "54":"WV","55":"WI","56":"WY"
+};
+
+// Canonical law type categories with colors
+const LAW_TYPES = [
+  { key: 'smokefree_outdoor', label: 'Smokefree Outdoor', color: '#6c8cff' },
+  { key: 'smokefree_indoor', label: 'Smokefree Indoor', color: '#34d399' },
+  { key: 'tobacco_retail_sales', label: 'Tobacco Retail Sales', color: '#fbbf24' },
+  { key: 'flavored_tobacco_ban', label: 'Flavored Tobacco Ban', color: '#a78bfa' },
+  { key: 'smokefree_multiunit_housing', label: 'Smokefree Housing', color: '#fb923c' },
+  { key: 'retailer_density_proximity', label: 'Retailer Density', color: '#f87171' },
+  { key: 'excise_tax', label: 'Local Excise Tax', color: '#60a5fa' },
+];
+
+// Map any law_type to a canonical category
+function categorize(lawType) {
+  if (!lawType) return null;
+  const lt = lawType.toLowerCase();
+  for (const t of LAW_TYPES) {
+    if (lt === t.key || lt.startsWith(t.key)) return t.key;
+  }
+  if (lt.includes('smokefree') && lt.includes('outdoor')) return 'smokefree_outdoor';
+  if (lt.includes('smokefree') && lt.includes('indoor')) return 'smokefree_indoor';
+  if (lt.includes('smokefree') && lt.includes('housing')) return 'smokefree_multiunit_housing';
+  if (lt.includes('smokefree') && lt.includes('multi')) return 'smokefree_multiunit_housing';
+  if (lt.includes('retail') && lt.includes('density')) return 'retailer_density_proximity';
+  if (lt.includes('retail') || lt.includes('sales') || lt.includes('license')) return 'tobacco_retail_sales';
+  if (lt.includes('flavor')) return 'flavored_tobacco_ban';
+  if (lt.includes('tax') || lt.includes('excise')) return 'excise_tax';
+  if (lt.includes('smokefree') || lt.includes('smoking') || lt.includes('smoke')) return 'smokefree_outdoor';
+  return null; // uncategorized
+}
+
+function getTypeInfo(key) {
+  return LAW_TYPES.find(t => t.key === key) || { key, label: key.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase()), color: '#8b8fa3' };
+}
+
+let DATA = null;
+let US_TOPO = null;
+let allOrdinanceJurs = []; // flattened: [{name, state, lat, lon, types: Set, ordinances: [...]}]
+let typeCounts = {};       // type -> count of jurisdictions
+let activeFilters = new Set(); // active type filters (empty = show all)
+
+Promise.all([
+  fetch('dashboard_data.json').then(r => r.json()),
+  fetch('https://cdn.jsdelivr.net/npm/us-atlas@3/counties-10m.json').then(r => r.json())
+]).then(([data, us]) => {
+  DATA = data;
+  US_TOPO = us;
+  buildOrdinanceIndex();
+  renderFilters();
+  renderSummary();
+  renderMap();
+  renderList();
+});
+
+function buildOrdinanceIndex() {
+  allOrdinanceJurs = [];
+  typeCounts = {};
+
+  for (const [abbrev, jurs] of Object.entries(DATA.jurisdictions || {})) {
+    const stateName = DATA.states[abbrev]?.name || abbrev;
+    for (const j of jurs) {
+      if (!j.ordinances || j.ordinances.length === 0) continue;
+      if (!j.lat || !j.lon) continue; // need coordinates for map
+
+      const types = new Set();
+      for (const o of j.ordinances) {
+        const cat = categorize(o.law_type);
+        if (cat) types.add(cat);
+      }
+
+      if (types.size === 0) continue;
+
+      allOrdinanceJurs.push({
+        name: j.name,
+        state: abbrev,
+        stateName,
+        lat: j.lat,
+        lon: j.lon,
+        types,
+        ordinances: j.ordinances,
+        county_fips: j.county_fips,
+      });
+
+      for (const t of types) {
+        typeCounts[t] = (typeCounts[t] || 0) + 1;
+      }
+    }
+  }
+}
+
+function getFilteredJurs() {
+  if (activeFilters.size === 0) return allOrdinanceJurs;
+  return allOrdinanceJurs.filter(j => {
+    for (const f of activeFilters) {
+      if (j.types.has(f)) return true;
+    }
+    return false;
+  });
+}
+
+function renderSummary() {
+  const totalJurs = allOrdinanceJurs.length;
+  const totalOrds = allOrdinanceJurs.reduce((s, j) => s + j.ordinances.length, 0);
+  const statesSet = new Set(allOrdinanceJurs.map(j => j.state));
+
+  document.getElementById('summary-row').innerHTML = `
+    <div class="summary-stat"><div class="val" style="color:var(--green)">${totalJurs}</div><div class="lbl">Jurisdictions with ordinances</div></div>
+    <div class="summary-stat"><div class="val" style="color:var(--blue)">${totalOrds}</div><div class="lbl">Total ordinances</div></div>
+    <div class="summary-stat"><div class="val" style="color:var(--purple)">${statesSet.size}</div><div class="lbl">States with data</div></div>
+    <div class="summary-stat"><div class="val" style="color:var(--accent)">${LAW_TYPES.filter(t => typeCounts[t.key]).length}</div><div class="lbl">Policy types found</div></div>
+  `;
+}
+
+function renderFilters() {
+  const sorted = LAW_TYPES.filter(t => typeCounts[t.key] > 0)
+    .sort((a, b) => (typeCounts[b.key] || 0) - (typeCounts[a.key] || 0));
+
+  document.getElementById('filter-row').innerHTML = `
+    <div class="filter-pill ${activeFilters.size === 0 ? 'active' : ''}" data-type="all" style="${activeFilters.size === 0 ? 'background:var(--accent);border-color:var(--accent)' : ''}">
+      All Types <span class="filter-count">(${allOrdinanceJurs.length})</span>
+    </div>
+    ${sorted.map(t => {
+      const isActive = activeFilters.has(t.key);
+      return `<div class="filter-pill ${isActive ? 'active' : ''}" data-type="${t.key}" style="${isActive ? `background:${t.color}22;border-color:${t.color};color:${t.color}` : ''}">
+        <span class="filter-dot" style="background:${t.color}"></span>
+        ${t.label} <span class="filter-count">(${typeCounts[t.key]})</span>
+      </div>`;
+    }).join('')}
+  `;
+
+  document.querySelectorAll('.filter-pill').forEach(pill => {
+    pill.onclick = () => {
+      const type = pill.dataset.type;
+      if (type === 'all') {
+        activeFilters.clear();
+      } else {
+        if (activeFilters.has(type)) {
+          activeFilters.delete(type);
+        } else {
+          activeFilters.add(type);
+        }
+      }
+      renderFilters();
+      renderMap();
+      renderList();
+    };
+  });
+}
+
+function renderMap() {
+  const container = document.getElementById('map-container');
+  container.innerHTML = '';
+  const width = container.clientWidth;
+  const height = width * 0.6;
+  const tooltip = document.getElementById('tooltip');
+
+  const svg = d3.select('#map-container').append('svg')
+    .attr('viewBox', `0 0 ${width} ${height}`)
+    .attr('preserveAspectRatio', 'xMidYMid meet');
+
+  const projection = d3.geoAlbersUsa().fitSize([width, height],
+    topojson.feature(US_TOPO, US_TOPO.objects.states));
+  const path = d3.geoPath().projection(projection);
+
+  // Draw state outlines
+  const states = topojson.feature(US_TOPO, US_TOPO.objects.states).features;
+  svg.selectAll('.state-bg')
+    .data(states)
+    .join('path')
+    .attr('d', path)
+    .attr('fill', '#141720')
+    .attr('stroke', '#2a3040')
+    .attr('stroke-width', 0.6);
+
+  // Get filtered jurisdictions
+  const jurs = getFilteredJurs();
+
+  // Project dots
+  const dots = [];
+  for (const j of jurs) {
+    const pt = projection([j.lon, j.lat]);
+    if (pt) {
+      // Determine primary color: if one filter active, use that color; otherwise use first type
+      let dotColor = '#6c8cff';
+      if (activeFilters.size === 1) {
+        const filterKey = [...activeFilters][0];
+        dotColor = getTypeInfo(filterKey).color;
+      } else if (activeFilters.size > 1) {
+        // Use the color of the first matching active filter
+        for (const f of activeFilters) {
+          if (j.types.has(f)) { dotColor = getTypeInfo(f).color; break; }
+        }
+      } else {
+        // No filter: use color of the first type
+        const firstType = [...j.types][0];
+        dotColor = getTypeInfo(firstType).color;
+      }
+      dots.push({ ...j, x: pt[0], y: pt[1], dotColor });
+    }
+  }
+
+  // Sort so smaller dots are on top (no overlap priority needed since we use opacity)
+  const dotR = dots.length > 100 ? 3.5 : dots.length > 50 ? 4.5 : 6;
+
+  const dotGroups = svg.selectAll('.policy-dot')
+    .data(dots)
+    .join('circle')
+    .attr('class', 'policy-dot')
+    .attr('cx', d => d.x)
+    .attr('cy', d => d.y)
+    .attr('r', dotR)
+    .attr('fill', d => d.dotColor)
+    .attr('opacity', 0.85)
+    .attr('stroke', '#fff')
+    .attr('stroke-width', 0.5)
+    .attr('cursor', 'pointer')
+    .on('mouseover', function(event, d) {
+      d3.select(this).attr('r', dotR + 3).attr('stroke-width', 2).raise();
+      const typeHtml = [...d.types].map(t => {
+        const info = getTypeInfo(t);
+        return `<span class="tt-type" style="background:${info.color}22;color:${info.color}">${info.label}</span>`;
+      }).join('');
+      tooltip.innerHTML = `
+        <div class="tt-name">${esc(d.name)}</div>
+        <div class="tt-row">${d.stateName}</div>
+        <div style="margin-top:4px">${typeHtml}</div>
+        <div class="tt-row">${d.ordinances.length} ordinance${d.ordinances.length!==1?'s':''}</div>
+      `;
+      tooltip.style.display = 'block';
+    })
+    .on('mousemove', function(event) {
+      const rect = container.getBoundingClientRect();
+      tooltip.style.left = (event.clientX - rect.left + 14) + 'px';
+      tooltip.style.top = (event.clientY - rect.top - 10) + 'px';
+    })
+    .on('mouseout', function() {
+      d3.select(this).attr('r', dotR).attr('stroke-width', 0.5);
+      tooltip.style.display = 'none';
+    });
+
+  const filterLabel = activeFilters.size === 0 ? 'all types' :
+    [...activeFilters].map(f => getTypeInfo(f).label).join(', ');
+  document.getElementById('map-hint').textContent =
+    `${dots.length} jurisdiction${dots.length!==1?'s':''} shown (${filterLabel})`;
+}
+
+function renderList() {
+  const jurs = getFilteredJurs();
+  const sorted = [...jurs].sort((a, b) => {
+    if (a.state !== b.state) return a.state.localeCompare(b.state);
+    return a.name.localeCompare(b.name);
+  });
+
+  const filterLabel = activeFilters.size === 0 ? 'All Jurisdictions with Ordinances' :
+    'Filtered: ' + [...activeFilters].map(f => getTypeInfo(f).label).join(', ');
+  document.getElementById('list-header').textContent = `${filterLabel} (${sorted.length})`;
+
+  if (sorted.length === 0) {
+    document.getElementById('list-grid').innerHTML = '<div class="no-data-msg">No jurisdictions match the current filter.</div>';
+    return;
+  }
+
+  document.getElementById('list-grid').innerHTML = sorted.map(j => {
+    const typeHtml = [...j.types].map(t => {
+      const info = getTypeInfo(t);
+      return `<span class="type-tag" style="background:${info.color}22;color:${info.color}">${info.label}</span>`;
+    }).join('');
+
+    const ordDetails = j.ordinances.slice(0, 3).map(o => {
+      const lt = (o.law_type||'').replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+      const date = o.effective_date || o.adoption_date || '';
+      return `<div style="font-size:0.7rem;color:var(--muted);margin-top:2px">${lt}${date ? ' &middot; ' + esc(date) : ''}</div>`;
+    }).join('');
+    const moreCount = j.ordinances.length - 3;
+
+    return `<div class="list-item">
+      <div class="list-item-name">${esc(j.name)}</div>
+      <div class="list-item-state">${j.stateName} &middot; ${j.ordinances.length} ordinance${j.ordinances.length!==1?'s':''}</div>
+      <div class="list-item-types">${typeHtml}</div>
+      ${ordDetails}
+      ${moreCount > 0 ? `<div style="font-size:0.68rem;color:var(--accent);margin-top:3px">+${moreCount} more</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function esc(s) { const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+</script>
+</body>
+</html>
